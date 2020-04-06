@@ -75,7 +75,7 @@ if(empty($_SESSION['auth'])) {
             $login = $_POST['login'];
             $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-            $query = "INSERT INTO user SET login = '$login',password = '$password'";
+            $query = "INSERT INTO user SET login = '$login',password = '$password',status = 1,banned = 0 ";
             mysqli_query($connect, $query) or die(mysqli_error($connect));
 
 //немедленная авторизация
@@ -84,15 +84,17 @@ if(empty($_SESSION['auth'])) {
             $id = mysqli_insert_id($connect);
             $_SESSION['login'] = $login;
             $_SESSION['id'] = $id;
+            $_SESSION['status'] = 'user';
+            $_SESSION['banned'] = 0;
 
-            $_SESSION['message'] = ['text' => 'Обьявление удалено',
+            $_SESSION['message'] = ['text' => 'Регистрация прошла успешно',
                 'status' => 'success'];
 
-            header('Location:../index.php');
+            header('Location:../index.php');die();
         }
     }
     addNewUser($connect);
     getRegForm($connect);
 }else{
-header('Location:login.php');
+header('Location:login.php');die();
 }

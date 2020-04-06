@@ -12,8 +12,7 @@
 <header><?php include "header.php"; ?></header>
 <main>
     <?php include "info.php"; ?>
-    <?= $list = $list ?? '' ?>
- <?= $content ?>
+    <?= $content ?>
 </main>
 <footer></footer>
 </body>

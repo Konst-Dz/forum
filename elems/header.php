@@ -9,11 +9,12 @@ if(!empty($_SESSION['auth'])){
     $id = $_SESSION['id'];
     $login = $_SESSION['login'];
 
-    echo "Добрый день, $login <br>";
+    echo "Добрый день, $login ({$_SESSION['status']})<br>";
     echo $mainPage;
     echo "<a href=\"../pages/logout.php\">Выйти</a><br>";
-    echo "<a href=\"../pages/ad.php\">Подать обьвление</a><br>";
-    echo "<a href=\"../pages/profile.php\">Управление обьявлениями</a><br>";
+    if($_SESSION['status'] == 'moder' or $_SESSION['status'] == 'admin'){
+        echo "<a href=\"../admin/index.php\">Админка</a><br>";
+    }
 
 }
 else{
