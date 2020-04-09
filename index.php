@@ -9,9 +9,14 @@ if (isset($_GET['cat'])){
     $category = $_GET['cat'];
     getForumCategory($connect,$category);
 }
+elseif(isset($_GET['topic'])){
+    $category = $_GET['topic'];
+    getTopicPosts($connect,$category);
+}
 else{
     getForumList($connect);
 }
+
 
     function getForumList($connect){
         $query = "SELECT * FROM category";
@@ -34,7 +39,9 @@ else{
             $from = ($page-1) * PAGES;
             $pages = PAGES;
 
-            $query = "SELECT *,COUNT(*) as count FROM topic WHERE id_category = '$id' GROUP BY id HAVING BY last_post DESC LIMIT $from,$pages ;";
+            $query = "
+            SELECT *,(SELECT COUNT(*) as count FROM topic WHERE id_category = '$id') as count FROM topic 
+            WHERE id_category = '$id' ORDER BY last_post DESC LIMIT $from,$pages ";
             $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
             $rows = mysqli_fetch_assoc($result)['count'];
             for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
@@ -42,7 +49,7 @@ else{
             $content = "<p><h2>Темы:</h2></p>";
 
             foreach ($data as $item) {
-                $content .= "<p><a href=\"\">{$item['name']}</a></p>";
+                $content .= "<p><a href=\"?topic={$item['id']}\">{$item['name']}</a></p>";
             }
             $content .= add($connect,$category);
             $content .= pagination($connect,$rows,$page);
@@ -52,7 +59,7 @@ else{
         }
     }
 
-function pagination($connect,$rows,$page)
+function pagination($connect,$rows,$page,$partHref)
 {
 //вычисление колв страниц
     $pages = ceil($rows / PAGES);
@@ -67,7 +74,7 @@ function pagination($connect,$rows,$page)
     } else {
         $disabled = 'disabled';
     }
-    $pagination .= "<a href=\"?page=$prev\" class=\" $disabled prev\" $disabled>Назад</a>";
+    $pagination .= "<a href=\"{$partHref}page=$prev\" class=\" $disabled prev\" $disabled>Назад</a>";
     for ($i = 1; $i <= $pages; $i++) {
         //текущая страница
         if ($i == $page) {
@@ -75,20 +82,14 @@ function pagination($connect,$rows,$page)
         } else {
             $active = "";
         }
-        //вывод ссылок
-        /*if ($category) {
-            $getList = "?list=$category&";
-        } else {
-            $getList = '?';
-        }*/
-        $pagination .= "<a class=\"$active\" href=\"page=$i\">$i</a>";
+        $pagination .= "<a class=\"$active\" href=\"{$partHref}page=$i\">$i</a>";
     }
     if ($page == $pages) {
         $dis = 'disabled';
     } else {
         $dis = '';
     }
-    $pagination .= "<a href=\"?page=$next\" class=\"$dis prev\">Вперед</a>";
+    $pagination .= "<a href=\"{$partHref}page=$next\" class=\"$dis prev\">Вперед</a>";
     $pagination .= "</div>";
     return $pagination;
 
@@ -129,45 +130,71 @@ function add($connect,$category){
     }
 }
 
+function getTopicPosts($connect,$category){
+    if(isset($_GET['topic'])) {
+        $page = $_GET['page'] ?? 1;
+        $from = ($page - 1) * PAGES;
+        $pages = PAGES;
+
+        $query = "
+            SELECT *,(SELECT COUNT(*) as count FROM post WHERE id_topic = '$category') as count
+                 FROM post LEFT JOIN user ON user.id = post.id_user WHERE id_topic = '$category' ORDER BY date LIMIT $from,$pages ";
+        $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
+        $rows = mysqli_fetch_assoc($result)['count'];
+        for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
+        $query = "SELECT id,name FROM topic WHERE id = '$category'";
+        $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
+        $topic = mysqli_fetch_assoc($result);
+        $title = $topic['name'];
+        $id = $topic['id'];
+        $partHref = "?topic={$id}&";
+
+        $content = "<p><h2>Тема:$title</h2></p>";
+
+        foreach ($data as $item) {
+            $content .= "<p>{$item['login']} написал :</p>";
+            $content .= "<p>{$item['text']}</p><hr>";
 
 
+        }
+        $content .= addPost($connect,$id);
+        $content .= pagination($connect, $rows, $page,$partHref);
 
-
-
-
-
-
-
-
-
-/*var_dump($_SERVER['REQUEST_URI']);
-//список категорий.
-$uri = trim(preg_replace('#\?.*#','', $_SERVER['REQUEST_URI']),'/');
-
-var_dump($uri);
-$list = '';
-$query = "SELECT * FROM category";
-$result = mysqli_query($connect,$query) or die(mysqli_error($connect));
-for($data = [];$row = mysqli_fetch_assoc($result);$data[] = $row);
-
-$list .= "<ul class=\"list\"><li><a href=\"/all/\">Все обьвления</a></li>";
-
-foreach ($data as $datum) {
-    $category = $datum['id'];
-    //$list .= "<li><a href=\"?list={$datum['id']}\">{$datum['category']}</a></li>";
-    $list .= "<li><a href=\"/$category/\">{$datum['category']}</a></li>";
+        include "elems/layout.php";
+    }
 }
-$list .= "</ul>";
 
-//Пагинация
-$page = $page ?? 1 ;
+function addPost($connect,$id){
+    if (isset($_GET['post'])){
+        if (!empty($_POST['text'])) {
+            $text = $_POST['text'];
+            $query = "INSERT INTO post SET text = '$text', date = NOW() ,
+            id_topic = '$id'";
+            mysqli_query($connect, $query) or die(mysqli_error($connect));
+            $_SESSION['message'] = ['text' => 'Вы успешно отправили сообщение',
+                'status' => 'success'];
+            //header('Location:../index.php');
+        } else {
+            $_SESSION['message'] = ['text' => 'Заполните все поля',
+                'status' => 'error'];
+        }
+
+        $content = "<form method=\"POST\" action=\"\">";
+        $content .= "Пост:<br>";
+        $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" ></textarea><br>";
+        $content .= "<input type=\"submit\" ><br></form>";
+        return $content;
+    }
+    else{
+        return "<a href=\"?topic={$id}&post=in\">Ответить в тему</a>";
+    }
+}
 
 
-//Кол-во записей на странице
-$howMany = 5;
-//категория обьяв
-$category = $uri ?? '' ;
 
-//Вывод  на страницу с пагинацией.
-include "elems/func/content.php";
-$content = content($connect,$page,$category,$howMany);*/
+
+
+
+
+
+
