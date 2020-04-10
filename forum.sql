@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Апр 08 2020 г., 16:27
+-- Время создания: Апр 10 2020 г., 16:28
 -- Версия сервера: 5.7.25
 -- Версия PHP: 7.3.9
 
@@ -69,7 +69,11 @@ INSERT INTO `post` (`id`, `id_user`, `text`, `id_topic`, `date`) VALUES
 (5, NULL, 'breslaw235', 6, '2020-04-08 15:04:12'),
 (6, NULL, 'breslaw2357', 7, '2020-04-08 15:04:19'),
 (7, NULL, 'breslaw23578', 8, '2020-04-08 15:04:23'),
-(8, NULL, 'breslaw2357822', 9, '2020-04-08 15:04:30');
+(8, NULL, 'breslaw2357822', 9, '2020-04-08 15:04:30'),
+(17, NULL, 'dfgdfgdfgdfgdfg', 8, '2020-04-09 15:41:02'),
+(18, NULL, 'sdsgdfg', 8, '2020-04-09 15:41:08'),
+(19, NULL, 'dfgdfgdg', 8, '2020-04-09 15:41:16'),
+(20, NULL, 'wewerwerfghfh', 10, '2020-04-10 10:58:14');
 
 -- --------------------------------------------------------
 
@@ -117,7 +121,8 @@ INSERT INTO `topic` (`id`, `name`, `id_category`, `last_post`) VALUES
 (6, 'werder234', 1, '2020-04-08 15:04:12'),
 (7, 'werder2346', 1, '2020-04-08 15:04:19'),
 (8, 'werder23468', 1, '2020-04-08 15:04:23'),
-(9, 'werder234682122', 1, '2020-04-08 15:04:30');
+(9, 'werder234682122', 1, '2020-04-08 15:04:30'),
+(10, 'ghfghgfh', 1, '2020-04-10 10:58:14');
 
 -- --------------------------------------------------------
 
@@ -132,6 +137,14 @@ CREATE TABLE `user` (
   `id_status` int(11) DEFAULT NULL,
   `banned` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Дамп данных таблицы `user`
+--
+
+INSERT INTO `user` (`id`, `login`, `password`, `id_status`, `banned`) VALUES
+(1, 'admin', '$2y$10$dQaMC/T6a7.VdFhwEbOFT.RbkMvrlUymk3gnP1UjAp6jUNpLv20jS', 3, 0),
+(2, 'kas', '$2y$10$xG/bqXeteab3TEGBYYSlauPPg0esAWYWQW28IsU8nx1U7nTc6b1.O', 1, 0);
 
 --
 -- Индексы сохранённых таблиц
@@ -181,7 +194,7 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT для таблицы `post`
 --
 ALTER TABLE `post`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT для таблицы `status`
@@ -193,13 +206,13 @@ ALTER TABLE `status`
 -- AUTO_INCREMENT для таблицы `topic`
 --
 ALTER TABLE `topic`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT для таблицы `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

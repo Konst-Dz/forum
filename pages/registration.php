@@ -19,7 +19,7 @@ if(empty($_SESSION['auth'])) {
 
     function confirmUser($connect){
     //проверка на заполнение
-    if (!empty($_POST['login']) and !empty($_POST['password']) and !empty($_POST['email'])) {
+    if (!empty($_POST['login']) and !empty($_POST['password'])) {
 
         $login = $_POST['login'];
         //хэш
@@ -75,7 +75,7 @@ if(empty($_SESSION['auth'])) {
             $login = $_POST['login'];
             $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-            $query = "INSERT INTO user SET login = '$login',password = '$password',status = 1,banned = 0 ";
+            $query = "INSERT INTO user SET login = '$login',password = '$password',id_status = 1,banned = 0 ";
             mysqli_query($connect, $query) or die(mysqli_error($connect));
 
 //немедленная авторизация

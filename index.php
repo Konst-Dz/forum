@@ -6,19 +6,17 @@ if ($uri == '/' or $uri == 'index.php'){
     getForumList($connect);
 }*/
 if (isset($_GET['cat'])){
-    $category = $_GET['cat'];
-    getForumCategory($connect,$category);
+    getForumCategory($connect);
 }
 elseif(isset($_GET['topic'])){
-    $category = $_GET['topic'];
-    getTopicPosts($connect,$category);
+    getTopicPosts($connect);
 }
 else{
-    getForumList($connect);
+    getMainPage($connect);
 }
 
 
-    function getForumList($connect){
+    function getMainPage($connect){
         $query = "SELECT * FROM category";
         $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
         for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
@@ -28,12 +26,17 @@ else{
         foreach ($data as $item) {
             $content .= "<p><a href=\"?cat={$item['id']}\">{$item['name']}</a></p>";
         }
-
+        $title = "Our forum";
         include "elems/layout.php";
     }
 
-    function getForumCategory($connect,$category){
-        if(isset($_GET['cat'])){
+    function getForumCategory($connect){
+    $category = $_GET['cat'];
+    $query = "SELECT * FROM category WHERE id = '$category' ";
+    $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
+    $page = mysqli_fetch_assoc($data);
+    $title = $page['name'];
+        if($page){
             $id = $_GET['cat'];
             $page = $_GET['page'] ?? 1;
             $from = ($page-1) * PAGES;
@@ -45,17 +48,24 @@ else{
             $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
             $rows = mysqli_fetch_assoc($result)['count'];
             for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
-             var_dump($rows);
+
+            $partHref = "?cat={$id}&";
             $content = "<p><h2>Темы:</h2></p>";
 
             foreach ($data as $item) {
                 $content .= "<p><a href=\"?topic={$item['id']}\">{$item['name']}</a></p>";
             }
-            $content .= add($connect,$category);
-            $content .= pagination($connect,$rows,$page);
+
+            if (!empty($_SESSION['auth'])){
+                $content .= add($connect,$category);
+                }
+            $content .= pagination($connect,$rows,$page,$partHref);
 
             include "elems/layout.php";
 
+        }
+        else{
+            header("HTTP/1.0 404 Not Found");
         }
     }
 
@@ -110,18 +120,17 @@ function add($connect,$category){
                 $_SESSION['message'] = ['text' => 'Вы успешно создали тему',
                     'status' => 'success'];
                 //header('Location:../index.php');
-            } else {
-                $_SESSION['message'] = ['text' => 'Заполните все поля',
-                    'status' => 'error'];
+            } else{
+                $name = $_POST['name'] ?? '';
+                $text = $_POST['text'] ?? '';
             }
-            $name = $name ?? '';
-            $text = $text ?? '';
+
 
         $content = "<form method=\"POST\" action=\"\">";
         $content .= "Новая тема:<br>";
-        $content .= "<input type=\"text\" name=\"name\" value=\"$name\"><br>";
+        $content .= "<input type=\"text\" name=\"name\" value=\"$name\" required><br>";
         $content .= "Пост:<br>";
-        $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" >$text</textarea><br>";
+        $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" required>$text</textarea><br>";
         $content .= "<input type=\"submit\" ><br></form>";
         return $content;
     }
@@ -130,34 +139,44 @@ function add($connect,$category){
     }
 }
 
-function getTopicPosts($connect,$category){
-    if(isset($_GET['topic'])) {
+function getTopicPosts($connect){
+    $category = $_GET['topic'];
+    $query = "SELECT * FROM topic WHERE id = '$category' ";
+    $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
+    $page = mysqli_fetch_assoc($data);
+    $title = $page['name'];
+    $partHref = "?topic={$category}&";
+    if($page) {
         $page = $_GET['page'] ?? 1;
         $from = ($page - 1) * PAGES;
         $pages = PAGES;
 
         $query = "
-            SELECT *,(SELECT COUNT(*) as count FROM post WHERE id_topic = '$category') as count
+            SELECT *,post.id as postId,user.id as usid,(SELECT COUNT(*) as count FROM post WHERE id_topic = '$category') as count
                  FROM post LEFT JOIN user ON user.id = post.id_user WHERE id_topic = '$category' ORDER BY date LIMIT $from,$pages ";
         $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
         $rows = mysqli_fetch_assoc($result)['count'];
         for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
-        $query = "SELECT id,name FROM topic WHERE id = '$category'";
-        $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
-        $topic = mysqli_fetch_assoc($result);
-        $title = $topic['name'];
-        $id = $topic['id'];
-        $partHref = "?topic={$id}&";
 
         $content = "<p><h2>Тема:$title</h2></p>";
 
         foreach ($data as $item) {
+            $userId = $item['usid'];
+            $postId = $item['postId'];
             $content .= "<p>{$item['login']} написал :</p>";
             $content .= "<p>{$item['text']}</p><hr>";
+                if ($_SESSION['id'] == $userId or $_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder'){
+                    $content .= deletePost($connect,$userId,$postId);
+                    if($_SESSION['id'] == $userId ) {
+                        $content .= "<a href=\"edit={$postId}\">{$item['title']}</a>";
+                    }
+            }
 
 
         }
-        $content .= addPost($connect,$id);
+        if(!empty($_SESSION['auth'])){
+            $content .= addPost($connect,$category);
+            }
         $content .= pagination($connect, $rows, $page,$partHref);
 
         include "elems/layout.php";
@@ -174,14 +193,11 @@ function addPost($connect,$id){
             $_SESSION['message'] = ['text' => 'Вы успешно отправили сообщение',
                 'status' => 'success'];
             //header('Location:../index.php');
-        } else {
-            $_SESSION['message'] = ['text' => 'Заполните все поля',
-                'status' => 'error'];
         }
 
         $content = "<form method=\"POST\" action=\"\">";
         $content .= "Пост:<br>";
-        $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" ></textarea><br>";
+        $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" required></textarea><br>";
         $content .= "<input type=\"submit\" ><br></form>";
         return $content;
     }
@@ -189,6 +205,19 @@ function addPost($connect,$id){
         return "<a href=\"?topic={$id}&post=in\">Ответить в тему</a>";
     }
 }
+
+function deletePost($connect,$userId,$postId){
+    if($_SESSION['id'] == $userId  or $_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder' ){
+            $query = "DELETE FROM post WHERE id = '$postId' ";
+            $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
+
+            return "<a href=\"$postId\">Удалить</a>";
+    }
+    else{
+        return '';
+    }
+}
+
 
 
 

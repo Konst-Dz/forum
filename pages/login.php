@@ -67,3 +67,4 @@ function loginIn($connect){
     }
 }
 
+loginIn($connect);
