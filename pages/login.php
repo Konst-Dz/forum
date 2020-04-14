@@ -19,7 +19,7 @@ function loginIn($connect){
             $password = $_POST['password'];
 
             //селект по логину
-            $query = "SELECT * FROM user LEFT JOIN status ON user.id_status = status.id WHERE login = '$login' ";
+            $query = "SELECT *,user.id as userId FROM user LEFT JOIN status ON user.id_status = status.id WHERE login = '$login' ";
             $result = mysqli_query($connect, $query) or die(mysqli_error($connect));
             $user = mysqli_fetch_assoc($result);
 
@@ -30,7 +30,7 @@ function loginIn($connect){
                 $hash = $user['password'];
                 //проверка хешей
                 if (password_verify($password, $hash)) {
-                    $_SESSION['id'] = $user['id'];
+                    $_SESSION['id'] = $user['userId'];
                     $_SESSION['auth'] = true;
                     $_SESSION['login'] = $user['login'];
                     //статус

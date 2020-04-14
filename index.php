@@ -110,12 +110,13 @@ function add($connect,$category){
             if (!empty($_POST['name']) and !empty($_POST['text'])) {
                 $name = $_POST['name'];
                 $text = $_POST['text'];
+                $userId = $_SESSION['id'];
                 $query = "INSERT INTO topic SET name = '$name', last_post = NOW() ,
             id_category = '$category'";
                 mysqli_query($connect, $query) or die(mysqli_error($connect));
                 $id = mysqli_insert_id($connect);
                 $query = "INSERT INTO post SET text = '$text', date = NOW() ,
-            id_topic = '$id'";
+            id_topic = '$id' id_user = '$userId' ";
                 mysqli_query($connect, $query) or die(mysqli_error($connect));
                 $_SESSION['message'] = ['text' => 'Вы успешно создали тему',
                     'status' => 'success'];
@@ -151,6 +152,8 @@ function getTopicPosts($connect){
         $from = ($page - 1) * PAGES;
         $pages = PAGES;
 
+        $content = addPost($connect,$category);
+        $content = deletePost($connect);
         $query = "
             SELECT *,post.id as postId,user.id as usid,(SELECT COUNT(*) as count FROM post WHERE id_topic = '$category') as count
                  FROM post LEFT JOIN user ON user.id = post.id_user WHERE id_topic = '$category' ORDER BY date LIMIT $from,$pages ";
@@ -158,7 +161,7 @@ function getTopicPosts($connect){
         $rows = mysqli_fetch_assoc($result)['count'];
         for ($data = []; $row = mysqli_fetch_assoc($result); $data[] = $row) ;
 
-        $content = "<p><h2>Тема:$title</h2></p>";
+        $content .= "<p><h2>Тема:$title</h2></p>";
 
         foreach ($data as $item) {
             $userId = $item['usid'];
@@ -166,7 +169,7 @@ function getTopicPosts($connect){
             $content .= "<p>{$item['login']} написал :</p>";
             $content .= "<p>{$item['text']}</p><hr>";
                 if ($_SESSION['id'] == $userId or $_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder'){
-                    $content .= deletePost($connect,$userId,$postId);
+                    $content .= buttonDelete($postId);
                     if($_SESSION['id'] == $userId ) {
                         $content .= "<a href=\"edit={$postId}\">{$item['title']}</a>";
                     }
@@ -175,7 +178,7 @@ function getTopicPosts($connect){
 
         }
         if(!empty($_SESSION['auth'])){
-            $content .= addPost($connect,$category);
+            $content .= buttonAddPost($category);
             }
         $content .= pagination($connect, $rows, $page,$partHref);
 
@@ -183,18 +186,32 @@ function getTopicPosts($connect){
     }
 }
 
-function addPost($connect,$id){
-    if (isset($_GET['post'])){
+function addPost($connect,$id)
+{
+    if (isset($_GET['post'])) {
         if (!empty($_POST['text'])) {
             $text = $_POST['text'];
+            $userId = $_SESSION['id'];
             $query = "INSERT INTO post SET text = '$text', date = NOW() ,
-            id_topic = '$id'";
+            id_topic = '$id', id_user = '$userId' ";
             mysqli_query($connect, $query) or die(mysqli_error($connect));
             $_SESSION['message'] = ['text' => 'Вы успешно отправили сообщение',
                 'status' => 'success'];
             //header('Location:../index.php');
         }
+    }
+}
 
+function deletePost($connect){
+        if(isset($_POST['del'])) {
+            $id = $_POST['del'];
+            $query = "DELETE FROM post WHERE id = '$id' ";
+            $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
+        }
+}
+
+function buttonAddPost($id){
+    if(isset($_GET['post'])){
         $content = "<form method=\"POST\" action=\"\">";
         $content .= "Пост:<br>";
         $content .= "<textarea name=\"text\" cols=\"30\" rows=\"10\" required></textarea><br>";
@@ -206,16 +223,10 @@ function addPost($connect,$id){
     }
 }
 
-function deletePost($connect,$userId,$postId){
-    if($_SESSION['id'] == $userId  or $_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder' ){
-            $query = "DELETE FROM post WHERE id = '$postId' ";
-            $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
-
-            return "<a href=\"$postId\">Удалить</a>";
-    }
-    else{
-        return '';
-    }
+function buttonDelete($postId){
+    $content = "<form method=\"POST\" action=\"\">";
+    $content .= "<button name=\"del\" value=\"$postId\">Удалить</button></form>";
+    return $content;
 }
 
 
