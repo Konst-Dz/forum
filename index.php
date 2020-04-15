@@ -1,10 +1,6 @@
 <?php
 include "elems/link.php";
-/*var_dump($_SERVER['REQUEST_URI']);
-$uri = $_SERVER['REQUEST_URI'];
-if ($uri == '/' or $uri == 'index.php'){
-    getForumList($connect);
-}*/
+
 if (isset($_GET['cat'])){
     getForumCategory($connect);
 }
@@ -51,9 +47,15 @@ else{
 
             $partHref = "?cat={$id}&";
             $content = "<p><h2>Темы:</h2></p>";
+            $post = 'topdel';
+            $content = deletePost($connect);
 
             foreach ($data as $item) {
                 $content .= "<p><a href=\"?topic={$item['id']}\">{$item['name']}</a></p>";
+                $topId = $item['id'];
+                if (isset($_SESSION['auth']) and ($_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder')) {
+                    $content .= buttonDelete($topId, $post);
+                }
             }
 
             if (!empty($_SESSION['auth'])){
@@ -169,7 +171,8 @@ function getTopicPosts($connect){
             $content .= "<p>{$item['login']} написал :</p>";
             $content .= "<p>{$item['text']}</p><hr>";
                 if ($_SESSION['id'] == $userId or $_SESSION['status'] == 'admin' or $_SESSION['status'] == 'moder'){
-                    $content .= buttonDelete($postId);
+                    $post = 'postdel';
+                    $content .= buttonDelete($postId,$post);
                     if($_SESSION['id'] == $userId ) {
                         $content .= "<a href=\"edit={$postId}\">{$item['title']}</a>";
                     }
@@ -203,11 +206,16 @@ function addPost($connect,$id)
 }
 
 function deletePost($connect){
-        if(isset($_POST['del'])) {
-            $id = $_POST['del'];
+        if(isset($_POST['postdel'])) {
+            $id = $_POST['postdel'];
             $query = "DELETE FROM post WHERE id = '$id' ";
             $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
         }
+    if(isset($_POST['topdel'])) {
+        $id = $_POST['topdel'];
+        $query = "DELETE FROM topic WHERE id = '$id' ";
+        $data = mysqli_query($connect, $query) or die(mysqli_error($connect));
+    }
 }
 
 function buttonAddPost($id){
@@ -223,9 +231,9 @@ function buttonAddPost($id){
     }
 }
 
-function buttonDelete($postId){
+function buttonDelete($postId,$post){
     $content = "<form method=\"POST\" action=\"\">";
-    $content .= "<button name=\"del\" value=\"$postId\">Удалить</button></form>";
+    $content .= "<button name=\"$post\" value=\"$postId\">Удалить</button></form>";
     return $content;
 }
 

@@ -1,6 +1,15 @@
 <?php
 include "../elems/link.php";
 
+if(isset($_SESSION['auth']) and $_SESSION['status'] == 'admin'){
+    changeStatus($connect);
+    banUser($connect);
+    getUsers($connect);
+}
+else{
+    header('Location:../pages/login.php');die();
+}
+
 function getUsers($connect){
 
      $title = 'Админка';
@@ -13,22 +22,56 @@ function getUsers($connect){
          <th>Блокировка</th></tr>";
          foreach ($data as $item) {
 
-         $block = $item['banned'];
-         $block = $block ? "Забанен" : "Нет";
+         $banned = $item['banned'];
+         $statusBlock = $banned ? "Забанен" : "Нет";
+         $block = $banned ? "Разбанить" : "Забанить";
 
          $content .= "<tr><td>{$item['login']}</td><td>{$item['name']}</td>
-         <td>$block</td>
-         <td><a href=\"?change={$item['usid']}\">Сменить статус</a></td>
-         <td><a href=\"?block={$item['usid']}\">Заблокировать</a></td></tr>";
+         <td>$statusBlock</td>
+         <td><a href=\"?change={$item['usid']}&status={$item['id_status']}\">Сменить статус</a></td>
+         <td><a href=\"?block={$item['usid']}&ban={$banned}\">$block</a></td></tr>";
 
                  }
          $content .= "</table>";
 
          include_once "dir/layout.php";
 }
-if(isset($_SESSION['auth']) and $_SESSION['status'] == 'admin'){
-    getUsers($connect);
+
+function banUser($connect){
+    if (isset($_GET['block']) and isset($_GET['ban'])){
+        $id = $_GET['block'];
+        $ban = $_GET['ban'];
+        $ban = ($ban) ? 0 : 1 ;
+
+        $query = "UPDATE user SET banned = '$ban' WHERE id = '$id' ";
+        mysqli_query($connect, $query) or die(mysqli_error($connect));
+        $_SESSION['message'] = ['text' => 'Статус пользователя изменен',
+        'status' => 'success'];
     }
-else{
-    header('Location:../pages/login.php');die();
+}
+
+function changeStatus($connect){
+    if (isset($_GET['change']) and isset($_GET['status'])){
+        $id = $_GET['change'];
+        $status = $_GET['status'];
+
+        /*$status = ($status == 1) ?  2 :  1 ;*/
+
+        switch ($status){
+            case 1:
+                $status = 2;
+                break;
+            case 2:
+                $status = 3;
+                break;
+            case 3:
+                $status = 1;
+                break;
+        }
+
+        $query = "UPDATE user SET id_status = '$status' WHERE id = '$id' ";
+        mysqli_query($connect, $query) or die(mysqli_error($connect));
+        $_SESSION['message'] = ['text' => 'Статус пользователя изменен',
+            'status' => 'success'];
+    }
 }
